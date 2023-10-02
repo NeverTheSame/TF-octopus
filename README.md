@@ -3,11 +3,12 @@ This Terraform project deploys an Amazon Web Services (AWS) Virtual Private Clou
 
 ## Table of Contents
 - Prerequisites
-- Getting Started with AWS
-- Project Structure
-- Variables
-- Resources
-- Outputs
+- Getting Started with AWS networking
+  - Project Structure
+  - Variables
+  - Resources
+  - Outputs
+- Getting Started with AWS EC2 instances
 - Getting Started with VMware vCenter
 - Terraform Commands
 
@@ -30,7 +31,7 @@ Before you begin, ensure you have the following prerequisites:
 7. Confirm and apply the changes by typing "yes" when prompted.
 8. Once the deployment is complete, Terraform will display the outputs, including VPC and subnet IDs.
 
-### Project Structure
+#### Project Structure
 The project structure is organized as follows:
 
 - __main.tf__: Defines the AWS provider, variables, resources, and outputs.
@@ -51,6 +52,11 @@ The project structure is organized as follows:
 - __vpc-id__: Displays the VPC's name tag.
 - __subnet-1-id__: Displays the name tag for subnet 1.
 - __subnet-2-id__: Displays the name tag for subnet 2.
+
+
+### Getting Started with AWS EC2 instances
+- To start working with this project navigate to the project directory: `cd web`
+
 
 ### Getting Started with VMware vCenter
 This Terraform configuration defines the provisioning of a virtual machine (VM) on a VMware vSphere infrastructure. It includes the setup of the necessary providers, data sources for datacenter, datastore, compute cluster, and network, as well as the creation of a virtual machine.

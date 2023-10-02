@@ -35,3 +35,7 @@ terraform.rc
 .DS_Store
 
 *._tf
+*/registry.terraform.io
+.terraform.lock.hcl
+*/.terraform
+/.terraform.lock.hcl
