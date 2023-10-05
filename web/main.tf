@@ -32,15 +32,36 @@ data "aws_subnet" "kk-subnet-1" {
     }
 }
 
+resource "aws_security_group" "security_group" {
+    description = "Allows the EC2 Instance to receive traffic on port 8080"
+    name = "${var.prefix}security-group"
+
+    ingress {
+        from_port = 8080
+        to_port = 8080
+        protocol = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+}
+
 resource "aws_instance" "ubuntu_machine" {
     ami = "ami-0f8e81a3da6e2510a"
     instance_type = "t2.micro"
-    subnet_id = data.aws_subnet.kk-subnet-1.id
+    vpc_security_group_ids = [aws_security_group.security_group.id]
+
+    user_data = <<EOF
+              #!/bin/bash
+              echo "Hello, World" > index.xhtml
+              nohup busybox httpd -f -p 8080 &
+              EOF
+    # When you change the user_data parameter and run apply, Terraform will terminate the original instance  
+    # and launch a totally new one.
+    user_data_replace_on_change = true
     tags = {
         Name = "${var.prefix}ubuntu-machine"
     }
 }
 
 output "ubuntu_machine_name" {
-    value = aws_instance.ubuntu_machine.tags.Name
+    value = aws_instance.ubuntu_machine.public_ip
 }
