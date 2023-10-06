@@ -31,14 +31,18 @@ data "aws_subnet" "kk-subnet-1" {
       Name = "${var.prefix}${var.cidr_blocks[1].name}"
     }
 }
+variable "server_port" {
+  description = "The port the server will use for HTTP requests"
+  type = number
+}
 
 resource "aws_security_group" "security_group" {
-    description = "Allows the EC2 Instance to receive traffic on port 8080"
+    description = "Allows the EC2 Instance to receive traffic on port server_port"
     name = "${var.prefix}security-group"
 
     ingress {
-        from_port = 8080
-        to_port = 8080
+        from_port = var.server_port
+        to_port = var.server_port
         protocol = "tcp"
         cidr_blocks = ["0.0.0.0/0"]
     }
@@ -52,7 +56,7 @@ resource "aws_instance" "ubuntu_machine" {
     user_data = <<EOF
               #!/bin/bash
               echo "Hello, World" > index.xhtml
-              nohup busybox httpd -f -p 8080 &
+              nohup busybox httpd -f -p ${var.server_port} &
               EOF
     # When you change the user_data parameter and run apply, Terraform will terminate the original instance  
     # and launch a totally new one.

@@ -3,31 +3,34 @@ provider "aws" {
     region = "us-west-1"
 }
 
+
 variable "server_port" {
     description = "The port the server will use for HTTP requests"
     type = number
 }
 
+
 variable "prefix" {
     description = "prefix for all deployed resources"
 }
 
-variable "alb_name" {
-  description = "The name of the ALB"
-  type        = string
-  default     = "terraform-asg-example"
+
+resource "aws_security_group" "ec2-sg" {
+  name = "${var.prefix}-ec2-sg"
+
+  ingress {
+    from_port   = var.server_port
+    to_port     = var.server_port
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
-variable "instance_security_group_name" {
-  description = "The name of the security group for the EC2 Instances"
-  type        = string
-  default     = "terraform-example-instance"
-}
 
-resource "aws_launch_configuration" "example" {
+resource "aws_launch_configuration" "launch-config" {
   image_id        = "ami-0f8e81a3da6e2510a"
   instance_type   = "t2.micro"
-  security_groups = [aws_security_group.instance.id]
+  security_groups = [aws_security_group.ec2-sg.id]
 
   user_data = <<-EOF
               #!/bin/bash
@@ -41,11 +44,25 @@ resource "aws_launch_configuration" "example" {
   }
 }
 
-resource "aws_autoscaling_group" "example" {
-  launch_configuration = aws_launch_configuration.example.name
-  vpc_zone_identifier  = data.aws_subnets.default.ids
 
-  target_group_arns = [aws_lb_target_group.asg.arn]
+data "aws_vpc" "default-vpc" {
+  default = true
+}
+
+
+data "aws_subnets" "default-subnets" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default-vpc.id]
+  }
+}
+
+
+resource "aws_autoscaling_group" "asg" {
+  launch_configuration = aws_launch_configuration.launch-config.name
+  vpc_zone_identifier  = data.aws_subnets.default-subnets.ids
+
+  target_group_arns = [aws_lb_target_group.lb-tg.arn]
   health_check_type = "ELB"
 
   min_size = 2
@@ -53,32 +70,23 @@ resource "aws_autoscaling_group" "example" {
 
   tag {
     key                 = "Name"
-    value               = "terraform-asg-example"
+    value               = "${var.prefix}-asg"
     propagate_at_launch = true
   }
 }
 
-data "aws_vpc" "default" {
-  default = true
-}
 
-data "aws_subnets" "default" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.default.id]
-  }
-}
-
-resource "aws_lb" "example" {
-  name               = var.alb_name
+resource "aws_lb" "load-balancer" {
+  name               = "${var.prefix}-lb"
 
   load_balancer_type = "application"
-  subnets            = data.aws_subnets.default.ids
+  subnets            = data.aws_subnets.default-subnets.ids
   security_groups    = [aws_security_group.alb.id]
 }
 
+
 resource "aws_lb_listener" "http" {
-  load_balancer_arn = aws_lb.example.arn
+  load_balancer_arn = aws_lb.load-balancer.arn
   port              = 80
   protocol          = "HTTP"
 
@@ -94,13 +102,13 @@ resource "aws_lb_listener" "http" {
   }
 }
 
-resource "aws_lb_target_group" "asg" {
 
-  name = var.alb_name
+resource "aws_lb_target_group" "lb-tg" {
+  name = "${var.prefix}-lb-tg"
 
   port     = var.server_port
   protocol = "HTTP"
-  vpc_id   = data.aws_vpc.default.id
+  vpc_id   = data.aws_vpc.default-vpc.id
 
   health_check {
     path                = "/"
@@ -113,7 +121,8 @@ resource "aws_lb_target_group" "asg" {
   }
 }
 
-resource "aws_lb_listener_rule" "asg" {
+
+resource "aws_lb_listener_rule" "lb-listener-rule" {
   listener_arn = aws_lb_listener.http.arn
   priority     = 100
 
@@ -125,19 +134,13 @@ resource "aws_lb_listener_rule" "asg" {
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.asg.arn
+    target_group_arn = aws_lb_target_group.lb-tg.arn
   }
 }
 
-variable "alb_security_group_name" {
-  description = "The name of the security group for the ALB"
-  type        = string
-  default     = "terraform-example-alb"
-}
 
 resource "aws_security_group" "alb" {
-
-  name = var.alb_security_group_name
+  name = "${var.prefix}-alb"
 
   # Allow inbound HTTP requests
   ingress {
@@ -157,23 +160,12 @@ resource "aws_security_group" "alb" {
 }
 
 
-resource "aws_security_group" "instance" {
-  name = var.instance_security_group_name
-
-  ingress {
-    from_port   = var.server_port
-    to_port     = var.server_port
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
-
 output "alb_dns_name" {
-    value = aws_lb.example.dns_name
+    value = aws_lb.load-balancer.dns_name
     description = "The domain name of the load balancer"
 }
 
+
 output "aws_subnets" {
-    value       = data.aws_subnets.default.ids
+    value       = data.aws_subnets.default-subnets.ids
 }
