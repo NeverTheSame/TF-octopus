@@ -33,6 +33,7 @@ override.tf.json
 .terraformrc
 terraform.rc
 .DS_Store
+*.pem
 
 *._tf
 */registry.terraform.io
@@ -40,3 +41,5 @@ terraform.rc
 */.terraform
 /.terraform.lock.hcl
 /.idea
+
+*.sh
