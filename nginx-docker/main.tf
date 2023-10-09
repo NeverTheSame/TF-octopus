@@ -79,6 +79,7 @@ resource "aws_default_security_group" "default-sg" {
 # Compute
 variable instance_type {}
 variable public_key_location {}
+variable private_key_location {}
 
 data "aws_ami" "latest-amazon-linux-2023-image" {
     most_recent = true
@@ -118,8 +119,26 @@ resource "aws_instance" "kk-ec2" {
         Name = "${var.prefix}-server"
     }
 
-    user_data = file("user-data.sh")
-    user_data_replace_on_change = true
+    # user_data = file("user-data.sh")
+    connection {
+        type = "ssh"
+        host = self.public_ip
+        user = "ec2-user"
+        private_key = file(var.private_key_location)
+    }
+
+    provisioner "file" {
+        source = "user-data.sh"
+        destination = "/home/ec2-user/user-data.sh"
+    }
+
+    provisioner "remote-exec" {
+        script = file("user-data.sh")
+    }
+
+    provisioner "local-exec" {
+        command = "echo ${self.public_ip} > public_ip.txt"
+    }
 }
 
 output "ec2_public_ip" {
