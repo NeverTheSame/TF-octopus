@@ -1,22 +1,3 @@
-provider "vsphere" {
-  user                 = var.username
-  password             = var.password
-  vsphere_server       = var.vsphere_server
-  allow_unverified_ssl = true
-}
-
-variable "username" {
-    description = "vCenter username"
-}
-
-variable "password" {
-    description = "vCenter password"
-}
-
-variable "vsphere_server" {
-    description = "vsphere_server address"
-}
-
 data "vsphere_datacenter" "datacenter" {
   name = "1iq-dc"
 }
