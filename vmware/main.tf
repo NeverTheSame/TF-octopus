@@ -5,55 +5,17 @@ provider "vsphere" {
   allow_unverified_ssl = true
 }
 
-variable "username" {
-    description = "vCenter username"
+module "content-item" {
+  source = "./modules/content-library"
+  dc_name = var.dc_name
+  content_library_name = var.content_library_name
+  importer_name = var.importer_name
 }
 
-variable "password" {
-    description = "vCenter password"
-}
-
-variable "vsphere_server" {
-    description = "vsphere_server address"
-}
-
-data "vsphere_datacenter" "datacenter" {
-  name = "1iq-dc"
-}
-
-data "vsphere_datastore" "datastore" {
-  name          = "vsanDatastore"
-  datacenter_id = data.vsphere_datacenter.datacenter.id
-}
-
-data "vsphere_compute_cluster" "cluster" {
-  name          = "1iq-vsan"
-  datacenter_id = data.vsphere_datacenter.datacenter.id
-}
-
-data "vsphere_network" "network" {
-  name          = "vLAN Lab"
-  datacenter_id = data.vsphere_datacenter.datacenter.id
-}
-
-resource "vsphere_virtual_machine" "vm" {
-  name             = "opensuse-15-6"
-  resource_pool_id = data.vsphere_compute_cluster.cluster.resource_pool_id
-  datastore_id     = data.vsphere_datastore.datastore.id
-  num_cpus         = 1
-  memory           = 2048
-  guest_id         = "other3xLinux64Guest"
-  network_interface {
-    network_id = data.vsphere_network.network.id
-  }
-  disk {
-    label = "disk0"
-    size  = 16
-  }
-  wait_for_guest_net_timeout = 0
-}
-
-output "vm_ip" {
-  value = vsphere_virtual_machine.vm.guest_ip_addresses[0]
-  description = "The IP address of the VMware vSphere virtual machine."
+module "vm" {
+  source = "./modules/vm"
+  cluster = var.cluster
+  datastore = var.datastore
+  dc_name = var.dc_name
+  network = var.network
 }
